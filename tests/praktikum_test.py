@@ -4,20 +4,26 @@ from praktikum.praktikum import main
 class TestPraktikumMain:
     """Тесты для функции main()."""
 
-    def test_main_runs_and_prints_receipt(self, capsys):
-        """main() выполняется без ошибок и печатает чек."""
+    def test_main_prints_bun(self, capsys):
         main()
+        assert "(==== black bun ====)" in capsys.readouterr().out
 
-        captured = capsys.readouterr()
-        output = captured.out
+    def test_main_prints_sour_cream(self, capsys):
+        main()
+        assert "= sauce sour cream =" in capsys.readouterr().out
 
-        # Булочка выбрана верно
-        assert "(==== black bun ====)" in output
-        # Добавленные соус и начинки в чеке
-        assert "= sauce sour cream =" in output
-        assert "= filling cutlet =" in output
-        assert "= filling dinosaur =" in output
-        # Удалённый ингредиент отсутствует
-        assert "= filling sausage =" not in output
-        # Итоговая цена
-        assert "Price: 700" in output
+    def test_main_prints_cutlet(self, capsys):
+        main()
+        assert "= filling cutlet =" in capsys.readouterr().out
+
+    def test_main_prints_dinosaur(self, capsys):
+        main()
+        assert "= filling dinosaur =" in capsys.readouterr().out
+
+    def test_main_does_not_print_sausage(self, capsys):
+        main()
+        assert "= filling sausage =" not in capsys.readouterr().out
+
+    def test_main_prints_price(self, capsys):
+        main()
+        assert "Price: 700" in capsys.readouterr().out

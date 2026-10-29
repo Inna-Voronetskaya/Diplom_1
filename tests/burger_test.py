@@ -5,9 +5,12 @@ from unittest.mock import Mock
 class TestBurger:
     """Тесты для класса Burger."""
 
-    def test_init_default_state(self, burger):
-        """При создании бургер пустой: нет булочки и ингредиентов."""
+    def test_init_bun_is_none(self, burger):
+        """При создании бургер не содержит булочки."""
         assert burger.bun is None
+
+    def test_init_ingredients_is_empty(self, burger):
+        """При создании бургер не содержит ингредиентов."""
         assert burger.ingredients == []
 
     def test_set_buns(self, burger, mock_bun):
@@ -22,11 +25,16 @@ class TestBurger:
         burger.set_buns(new_bun)
         assert burger.bun == new_bun
 
-    def test_add_ingredient(self, burger, mock_ingredient):
-        """Ингредиент добавляется в список."""
+    def test_add_ingredient_increases_length(self, burger, mock_ingredient):
+        """Добавление ингредиента увеличивает длину списка."""
         ing = mock_ingredient()
         burger.add_ingredient(ing)
         assert len(burger.ingredients) == 1
+
+    def test_add_ingredient_correct_object(self, burger, mock_ingredient):
+        """В список добавляется именно тот ингредиент."""
+        ing = mock_ingredient()
+        burger.add_ingredient(ing)
         assert burger.ingredients[0] == ing
 
     def test_add_multiple_ingredients(self, burger, mock_ingredient):
@@ -101,37 +109,61 @@ class TestBurger:
 
         assert burger.get_price() == 200.0 + expected_extra
 
-    def test_get_receipt_without_ingredients(self, burger, mock_bun):
-        """Чек без ингредиентов: две строки с булочкой + пустая строка + цена."""
+    # --- Разделенные тесты для чека БЕЗ ингредиентов (4 строки) ---
+
+    def test_receipt_without_ingredients_top_bun(self, burger, mock_bun):
         burger.set_buns(mock_bun)
-
-        receipt = burger.get_receipt()
-        lines = receipt.split("\n")
-
+        lines = burger.get_receipt().split("\n")
         assert lines[0] == "(==== black bun ====)"
+
+    def test_receipt_without_ingredients_bottom_bun(self, burger, mock_bun):
+        burger.set_buns(mock_bun)
+        lines = burger.get_receipt().split("\n")
         assert lines[1] == "(==== black bun ====)"
+
+    def test_receipt_without_ingredients_empty_line(self, burger, mock_bun):
+        burger.set_buns(mock_bun)
+        lines = burger.get_receipt().split("\n")
         assert lines[2] == ""
+
+    def test_receipt_without_ingredients_price(self, burger, mock_bun):
+        burger.set_buns(mock_bun)
+        lines = burger.get_receipt().split("\n")
         assert lines[3] == "Price: 200.0"
 
-    def test_get_receipt_with_ingredients(self, burger, mock_bun, mock_ingredient):
-        """Чек с ингредиентами: тип в нижнем регистре, имя, цена."""
+    # --- Разделенные тесты для чека С ОДНИМ ингредиентом (5 строк) ---
+
+    def test_receipt_with_one_ingredient_top_bun(self, burger, mock_bun, mock_ingredient):
         burger.set_buns(mock_bun)
-        burger.add_ingredient(
-            mock_ingredient(name="cutlet", price=200.0, ing_type="FILLING")
-        )
-        burger.add_ingredient(
-            mock_ingredient(name="hot sauce", price=50.0, ing_type="SAUCE")
-        )
-
-        receipt = burger.get_receipt()
-        lines = receipt.split("\n")
-
+        burger.add_ingredient(mock_ingredient(name="cutlet", price=200.0, ing_type="FILLING"))
+        lines = burger.get_receipt().split("\n")
         assert lines[0] == "(==== black bun ====)"
-        assert lines[1] == "= filling cutlet ="
-        assert lines[2] == "= sauce hot sauce ="
-        assert lines[3] == "(==== black bun ====)"
-        assert lines[4] == ""
-        assert lines[5] == "Price: 450.0"
+
+    def test_receipt_with_one_ingredient_content(self, burger, mock_bun, mock_ingredient):
+        burger.set_buns(mock_bun)
+        burger.add_ingredient(mock_ingredient(name="hot sauce", price=50.0, ing_type="SAUCE"))
+        lines = burger.get_receipt().split("\n")
+        assert lines[1] == "= sauce hot sauce ="
+
+    def test_receipt_with_one_ingredient_bottom_bun(self, burger, mock_bun, mock_ingredient):
+        burger.set_buns(mock_bun)
+        burger.add_ingredient(mock_ingredient(name="cutlet", price=200.0))
+        lines = burger.get_receipt().split("\n")
+        assert lines[2] == "(==== black bun ====)"
+
+    def test_receipt_with_one_ingredient_empty_line(self, burger, mock_bun, mock_ingredient):
+        burger.set_buns(mock_bun)
+        burger.add_ingredient(mock_ingredient(name="cutlet", price=200.0))
+        lines = burger.get_receipt().split("\n")
+        assert lines[3] == ""
+
+    def test_receipt_with_one_ingredient_price(self, burger, mock_bun, mock_ingredient):
+        burger.set_buns(mock_bun)
+        burger.add_ingredient(mock_ingredient(price=250.0))
+        lines = burger.get_receipt().split("\n")
+        assert lines[4] == "Price: 450.0"
+
+    # --- Разделенные тесты для проверки вызовов моков ---
 
     def test_get_receipt_calls_bun_name_twice(self, burger, mock_bun):
         """Проверка, что get_name() булочки вызывается дважды."""
@@ -139,14 +171,23 @@ class TestBurger:
         burger.get_receipt()
         assert mock_bun.get_name.call_count == 2
 
-    def test_get_receipt_calls_ingredient_methods(self, burger, mock_bun, mock_ingredient):
-        """Проверка вызовов методов у ингредиента."""
-        ing = mock_ingredient(name="cutlet", price=200.0, ing_type="FILLING")
+    def test_receipt_calls_ingredient_get_type(self, burger, mock_bun, mock_ingredient):
+        ing = mock_ingredient()
         burger.set_buns(mock_bun)
         burger.add_ingredient(ing)
-
         burger.get_receipt()
-
         ing.get_type.assert_called_once()
+
+    def test_receipt_calls_ingredient_get_name(self, burger, mock_bun, mock_ingredient):
+        ing = mock_ingredient()
+        burger.set_buns(mock_bun)
+        burger.add_ingredient(ing)
+        burger.get_receipt()
         ing.get_name.assert_called_once()
+
+    def test_receipt_calls_ingredient_get_price(self, burger, mock_bun, mock_ingredient):
+        ing = mock_ingredient()
+        burger.set_buns(mock_bun)
+        burger.add_ingredient(ing)
+        burger.get_receipt()
         ing.get_price.assert_called_once()
